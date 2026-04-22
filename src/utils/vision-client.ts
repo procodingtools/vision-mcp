@@ -58,14 +58,37 @@ export async function queryVisionModel(
     stream: false,
   };
 
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${config.apiKey}`,
-    },
-    body: JSON.stringify(body),
-  });
+  // Use AbortController with a generous timeout (5 minutes) for vision calls
+  // Vision model inference on large images can take 30-120+ seconds
+  const controller = new AbortController();
+  const timeoutMs = config.requestTimeoutMs || 300_000; // 5 minutes default
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${config.apiKey}`,
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+  } catch (err: any) {
+    clearTimeout(timeoutId);
+    if (err.name === "AbortError") {
+      throw new Error(
+        `[vision-mcp] Request timed out after ${Math.round(timeoutMs / 1000)}s. ` +
+        `The vision model may still be processing. Try again or increase VISION_REQUEST_TIMEOUT_MS.`
+      );
+    }
+    throw new Error(
+      `[vision-mcp] Network error calling vision API: ${err.message}`
+    );
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   // Handle non-OK responses
   if (!response.ok) {
