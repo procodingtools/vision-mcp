@@ -29,7 +29,8 @@ async function main() {
     `[vision-mcp] Server started. Model: ${config.model}, ` +
     `API: ${config.apiBaseUrl}/api/chat, ` +
     `Max image size: ${(config.maxImageSizeBytes / (1024 * 1024)).toFixed(0)}MB, ` +
-    `Request timeout: ${(config.requestTimeoutMs / 1000).toFixed(0)}s`
+    `Request timeout: ${(config.requestTimeoutMs / 1000).toFixed(0)}s, ` +
+    `Max retries: ${config.maxRetries}`
   );
 }
 

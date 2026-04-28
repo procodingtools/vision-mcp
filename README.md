@@ -51,6 +51,8 @@ Set the following environment variables:
 | `VISION_API_BASE_URL` | No | `https://ollama.com` | Base URL for the Ollama API (no trailing slash) |
 | `VISION_MODEL` | No | `kimi-k2.6:cloud` | Vision model identifier |
 | `VISION_MAX_IMAGE_SIZE_MB` | No | `20` | Maximum image file size in megabytes |
+| `VISION_REQUEST_TIMEOUT_MS` | No | `300000` | Timeout for API requests in milliseconds |
+| `VISION_MAX_RETRIES` | No | `3` | Max retry attempts for transient errors (503, 429, 500, 502, 504) |
 
 For local development, copy `.env.example` to `.env` and fill in values:
 
@@ -177,6 +179,19 @@ The server returns clear, actionable error messages as text content:
 - **Unsupported format**: `"Unsupported image type: .pdf (application/pdf)"`
 - **Auth failure**: `"Authentication failed (401). Check VISION_API_KEY"`
 - **Model not found**: `"Model or endpoint not found. Verify VISION_MODEL and VISION_API_BASE_URL"`
+- **Transient errors**: Automatically retried with exponential backoff (429, 500, 502, 503, 504)
+
+## Retry Behavior
+
+When the Ollama API returns a transient error (503 Service Unavailable, 429 Rate Limited, 500 Internal Server Error, 502 Bad Gateway, or 504 Gateway Timeout), the server automatically retries the request with exponential backoff:
+
+- **Max retries**: 3 (configurable via `VISION_MAX_RETRIES`)
+- **Initial backoff**: 2 seconds
+- **Backoff multiplier**: 2× per attempt (2s → 4s → 8s)
+- **Max backoff**: 30 seconds
+- **Jitter**: ±25% to avoid thundering herd
+
+Retry progress is logged to stderr so it doesn't interfere with the MCP stdio protocol.
 
 ## License
 

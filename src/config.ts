@@ -9,6 +9,7 @@
  *   VISION_MODEL                — Model identifier (default: kimi-k2.6:cloud)
  *   VISION_MAX_IMAGE_SIZE_MB    — Max image file size in MB (default: 20)
  *   VISION_REQUEST_TIMEOUT_MS   — Timeout for API requests in ms (default: 300000 = 5 min)
+ *   VISION_MAX_RETRIES          — Max retry attempts for transient errors (default: 3)
  */
 
 export interface VisionConfig {
@@ -17,6 +18,7 @@ export interface VisionConfig {
   model: string;
   maxImageSizeBytes: number;
   requestTimeoutMs: number;
+  maxRetries: number;
 }
 
 function getEnv(name: string, fallback?: string): string | undefined {
@@ -40,6 +42,7 @@ export function loadConfig(): VisionConfig {
   const model: string = getEnv("VISION_MODEL") ?? "kimi-k2.6:cloud";
   const maxImageSizeMB = Math.max(1, Number(getEnv("VISION_MAX_IMAGE_SIZE_MB", "20")) || 20);
   const requestTimeoutMs = Math.max(10_000, Number(getEnv("VISION_REQUEST_TIMEOUT_MS", "300000")) || 300_000);
+  const maxRetries = Math.max(0, Math.min(10, Number(getEnv("VISION_MAX_RETRIES", "3")) || 3));
 
   return {
     apiKey,
@@ -47,5 +50,6 @@ export function loadConfig(): VisionConfig {
     model,
     maxImageSizeBytes: maxImageSizeMB * 1024 * 1024,
     requestTimeoutMs,
+    maxRetries,
   };
 }
